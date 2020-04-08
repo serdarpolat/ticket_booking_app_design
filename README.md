@@ -1,5 +1,8 @@
 # Screen
-<img src="ticket_booking.jpg" width="540" />
+### Click on screenshot to watch Youtube video
+
+[![IMAGE ALT TEXT HERE](ticket_booking.jpg)](http://www.youtube.com/watch?v=gcXE49yDT04)
+
 
 ## Getting Started
 
