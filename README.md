@@ -1,6 +1,5 @@
-# ticketbooking_app
-
-A new Flutter project.
+# Screen
+<img src="ticket_booking.jpg" width="540" />
 
 ## Getting Started
 
