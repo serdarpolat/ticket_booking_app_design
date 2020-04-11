@@ -2,6 +2,9 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:simple_gesture_detector/simple_gesture_detector.dart';
+import 'package:ticketbooking_app/movie_model.dart';
+import 'package:ticketbooking_app/secondary_layout.dart';
 
 void main() {
   runApp(MyApp());
@@ -23,10 +26,11 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   AnimationController ctrl;
+  AnimationController progressCtrl;
   Animation<double> animation;
+  Animation<double> progressAnimation;
   PageController pageController = PageController(viewportFraction: 0.78);
   double get w => MediaQuery.of(context).size.width;
   double get h => MediaQuery.of(context).size.height;
@@ -35,6 +39,9 @@ class _HomePageState extends State<HomePage>
   int tapButton = 0;
   bool opacity = false;
   Widget seatDummy = Container();
+  int swipe = 1;
+  int activeIdx = 0;
+  bool isExpand = false;
 
   @override
   void initState() {
@@ -43,7 +50,11 @@ class _HomePageState extends State<HomePage>
     ctrl =
         AnimationController(vsync: this, duration: Duration(milliseconds: 360));
 
+    progressCtrl = AnimationController(
+        vsync: this, duration: Duration(milliseconds: 1000));
+
     animation = Tween(begin: 0.0, end: 1.0).animate(ctrl);
+    progressAnimation = Tween(begin: 0.0, end: 1.0).animate(progressCtrl);
 
     int next = 0;
 
@@ -70,10 +81,15 @@ class _HomePageState extends State<HomePage>
               duration: Duration(milliseconds: 320),
               top: 0,
               left: w * e.idx - (w * leftPosition),
-              child: BlurBg(
-                w: w,
-                h: h,
-                img: e.img,
+              right: 0,
+              child: Align(
+                alignment: Alignment.center,
+                child: BlurBg(
+                  w: w,
+                  h: h,
+                  img: e.img,
+                  swipe: (1 - swipe),
+                ),
               ),
             );
           }).toList(),
@@ -87,225 +103,307 @@ class _HomePageState extends State<HomePage>
               color: Colors.black.withOpacity(0.1),
             ),
           ),
-
-          //! Movie infos
-          AnimatedPositioned(
-            duration: Duration(milliseconds: 1200),
-            curve: Interval(0.0, 0.6, curve: Curves.ease),
-            left: 50 * (1.0 - tapButton),
-            right: 50 * (1.0 - tapButton),
-            bottom: 50 * (1.0 - tapButton),
-            top: h * (0.3 - 0.2 * tapButton),
-            onEnd: () {
-              if (tapButton == 1) {
-                setState(() {
-                  seatDummy = Seats(tapBtn: tapButton);
-                });
-              }
-            },
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: Container(
-                height: 622,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4),
-                  color: Colors.white,
-                ),
-                child: Stack(
-                  children: <Widget>[
-                    Positioned(
-                      bottom: 130,
-                      left: 0,
-                      child: AnimatedOpacity(
-                        duration: Duration(milliseconds: 150),
-                        curve: Interval(0.5, 1.0),
-                        opacity: opacity ? 0 : 1,
-                        child: AnimatedContainer(
-                          duration: Duration(milliseconds: 1200),
-                          curve: Interval(0.0, 0.6, curve: Curves.ease),
-                          width: w - (100 * (1 - tapButton)),
-                          height: 250 + 60.0 * tapButton,
-                          child: Stack(
-                            children: <Widget>[
-                              ...movies.map((t) {
-                                double ww = w - 100;
-                                return TitleLayout(
-                                  title: t.title,
-                                  left: ww * t.idx - ww * leftPosition,
-                                  width: w - (100 * (1 - tapButton)),
-                                );
-                              }).toList(),
-                              Positioned(
-                                top: 63,
-                                left: 0,
-                                child: Opacity(
-                                  opacity: 1.0 * tapButton,
-                                  child: Container(
-                                    width: w,
-                                    child: Column(
-                                      children: <Widget>[
-                                        Column(
-                                          children: <Widget>[
-                                            SizedBox(height: 16),
-                                            ...items.map((e) {
-                                              return TicketInfoItem(
-                                                w: w,
-                                                items: e,
-                                              );
-                                            }).toList(),
-                                            SizedBox(height: 16),
-                                            Container(
-                                              width: w - 100,
-                                              child: Text(
-                                                "\$25.00",
-                                                textAlign: TextAlign.end,
-                                                style: TextStyle(
-                                                  color: Colors.black,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 30,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              ...movies.map((e) {
-                                double ww = w - 100;
-                                return TimePickerLayout(
-                                  left: ww * e.idx - ww * leftPosition,
-                                  w: w,
-                                  tapBtn: tapButton,
-                                );
-                              }).toList(),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    AnimatedPositioned(
-                      left: 50.0 * tapButton,
-                      right: 50.0 * tapButton,
-                      bottom: 50.0 * tapButton,
-                      duration: Duration(milliseconds: 1200),
-                      curve: Interval(0.2, 1.0, curve: Curves.elasticOut),
-                      onEnd: () {
-                        setState(() {
-                          tapButton == 0 ? btnTitle = "BOOK" : btnTitle = "PAY";
-                        });
-                      },
-                      child: BottomButton(
-                        w: w,
-                        onTap: () {
-                          setState(() {
-                            tapButton == 0 ? tapButton = 1 : tapButton = 0;
-                          });
-
-                          if (tapButton == 0) {
-                            setState(() {
-                              seatDummy = Container();
-                            });
-                          }
-
-                          if (ctrl.status == AnimationStatus.dismissed) {
-                            setState(() {
-                              ctrl.forward();
-                            });
-                          } else {
-                            setState(() {
-                              ctrl.reverse();
-                            });
-                          }
-                        },
-                        btnTitle: btnTitle,
-                      ),
-                    ),
-                  ],
-                ),
+          Positioned(
+            top: 0,
+            left: 24,
+            right: 24,
+            bottom: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                color: Colors.black.withOpacity(0.2),
               ),
             ),
           ),
-          seatDummy,
-          EmptySeatPop(w: w, tapBtn: tapButton),
-          EmptySeatPopArrow(w: w, tapBtn: tapButton),
-          AnimatedPositioned(
-            duration: Duration(milliseconds: 360),
-            top: 64.0 - (220 * tapButton),
-            child: Container(
-              width: w,
-              height: h * 0.5,
-              child: PageView(
-                onPageChanged: (page) {
-                  setState(() {
-                    opacity = true;
-                  });
+          SecondaryLayout(
+            w: w,
+            h: h,
+            swipe: swipe,
+            isExpand: isExpand,
+            title: movies[activeIdx].title,
+            progressAnimation: progressAnimation,
+            onPressed: () {
+              setState(() {
+                swipe = 1;
+                isExpand = !isExpand;
+                progressCtrl.reverse();
+              });
+            },
+          ),
 
-                  Future.delayed(Duration(milliseconds: 300), () {
-                    setState(() {
-                      opacity = false;
-                    });
-                  });
-                },
-                controller: pageController,
-                children: movies.map((e) {
-                  return AnimatedPadding(
-                    duration: Duration(milliseconds: 240),
-                    padding: EdgeInsets.symmetric(horizontal: 20 * 0.0),
+          //! Movie Item
+          AnimatedPositioned(
+            duration: Duration(milliseconds: 600),
+            curve: Curves.easeInToLinear,
+            top: (h - 88) * (1.0 - swipe),
+            left: 0,
+            right: 0,
+            bottom: -88 * (1.0 - swipe),
+            child: Stack(
+              children: <Widget>[
+                //! Movie infos
+                AnimatedPositioned(
+                  duration: Duration(milliseconds: 1200),
+                  curve: Interval(0.0, 0.6, curve: Curves.ease),
+                  left: 50 * (1.0 - tapButton),
+                  right: 50 * (1.0 - tapButton),
+                  bottom: 50 * (1.0 - tapButton),
+                  top: h * (0.3 - 0.2 * tapButton),
+                  onEnd: () {
+                    if (tapButton == 1) {
+                      setState(() {
+                        seatDummy = Seats(tapBtn: tapButton);
+                      });
+                    }
+                  },
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
                     child: Container(
-                      height: h * 0.5,
-                      padding: EdgeInsets.only(left: 30, right: 30, bottom: 40),
+                      height: 622,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        color: Colors.white,
+                      ),
                       child: Stack(
-                        overflow: Overflow.visible,
                         children: <Widget>[
-                          Opacity(
-                            opacity: 1.0 - tapButton,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.6),
-                                    offset: Offset(0, 10),
-                                    blurRadius: 20,
-                                  ),
-                                ],
-                                borderRadius: BorderRadius.circular(16),
+                          Positioned(
+                            bottom: 130,
+                            left: 0,
+                            child: AnimatedOpacity(
+                              duration: Duration(milliseconds: 150),
+                              curve: Interval(0.5, 1.0),
+                              opacity: opacity ? 0 : 1,
+                              child: AnimatedContainer(
+                                duration: Duration(milliseconds: 1200),
+                                curve: Interval(0.0, 0.6, curve: Curves.ease),
+                                width: w - (100 * (1 - tapButton)),
+                                height: 250 + 60.0 * tapButton,
+                                child: Stack(
+                                  children: <Widget>[
+                                    ...movies.map((t) {
+                                      double ww = w - 100;
+                                      return TitleLayout(
+                                        title: t.title,
+                                        left: ww * t.idx - ww * leftPosition,
+                                        width: w - (100 * (1 - tapButton)),
+                                      );
+                                    }).toList(),
+                                    Positioned(
+                                      top: 63,
+                                      left: 0,
+                                      child: Opacity(
+                                        opacity: 1.0 * tapButton,
+                                        child: Container(
+                                          width: w,
+                                          child: Column(
+                                            children: <Widget>[
+                                              Column(
+                                                children: <Widget>[
+                                                  SizedBox(height: 16),
+                                                  ...items.map((e) {
+                                                    return TicketInfoItem(
+                                                      w: w,
+                                                      items: e,
+                                                    );
+                                                  }).toList(),
+                                                  SizedBox(height: 16),
+                                                  Container(
+                                                    width: w - 100,
+                                                    child: Text(
+                                                      "\$25.00",
+                                                      textAlign: TextAlign.end,
+                                                      style: TextStyle(
+                                                        color: Colors.black,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 30,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    ...movies.map((e) {
+                                      double ww = w - 100;
+                                      return TimePickerLayout(
+                                        left: ww * e.idx - ww * leftPosition,
+                                        w: w,
+                                        tapBtn: tapButton,
+                                      );
+                                    }).toList(),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                          AnimatedBuilder(
-                            animation: animation,
-                            builder: (context, child) {
-                              return Transform(
-                                transform: Matrix4.identity()
-                                  ..setEntry(3, 2, 0.0008)
-                                  ..rotateX(e.idx == leftPosition
-                                      ? animation.value
-                                      : 0),
-                                alignment: Alignment.center,
-                                child: Transform.scale(
-                                  scale: 1.0 - (0.2 * ctrl.value),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                      image: DecorationImage(
-                                        image: AssetImage(
-                                            "assets/images/${e.img}"),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
+                          AnimatedPositioned(
+                            left: 50.0 * tapButton,
+                            right: 50.0 * tapButton,
+                            bottom: 50.0 * tapButton,
+                            duration: Duration(milliseconds: 1200),
+                            curve: Interval(0.2, 1.0, curve: Curves.elasticOut),
+                            onEnd: () {
+                              setState(() {
+                                tapButton == 0
+                                    ? btnTitle = "BOOK"
+                                    : btnTitle = "PAY";
+                              });
                             },
+                            child: BottomButton(
+                              w: w,
+                              onTap: () {
+                                setState(() {
+                                  tapButton == 0
+                                      ? tapButton = 1
+                                      : tapButton = 0;
+                                });
+
+                                if (tapButton == 0) {
+                                  setState(() {
+                                    seatDummy = Container();
+                                  });
+                                }
+
+                                if (ctrl.status == AnimationStatus.dismissed) {
+                                  setState(() {
+                                    ctrl.forward();
+                                  });
+                                } else {
+                                  setState(() {
+                                    ctrl.reverse();
+                                  });
+                                }
+                              },
+                              btnTitle: btnTitle,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  );
-                }).toList(),
+                  ),
+                ),
+                seatDummy,
+                EmptySeatPop(w: w, tapBtn: tapButton),
+                EmptySeatPopArrow(w: w, tapBtn: tapButton),
+                //! Image
+                AnimatedPositioned(
+                  duration: Duration(milliseconds: 360),
+                  top: 64.0 - (220 * tapButton),
+                  child: Container(
+                    width: w,
+                    height: h * 0.5,
+                    child: PageView(
+                      onPageChanged: (page) {
+                        setState(() {
+                          opacity = true;
+                        });
+
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          setState(() {
+                            opacity = false;
+                          });
+                        });
+                      },
+                      controller: pageController,
+                      children: movies.map((e) {
+                        return AnimatedPadding(
+                          duration: Duration(milliseconds: 240),
+                          padding: EdgeInsets.only(
+                              top:
+                                  swipe == 1 ? 0 : activeIdx == e.idx ? 0 : 30),
+                          child: Container(
+                            height: h * 0.5,
+                            padding: EdgeInsets.only(
+                                left: 30, right: 30, bottom: 40),
+                            child: Stack(
+                              overflow: Overflow.visible,
+                              children: <Widget>[
+                                Opacity(
+                                  opacity: 1.0 - tapButton,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.6),
+                                          offset: Offset(0, 10),
+                                          blurRadius: 20,
+                                        ),
+                                      ],
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                ),
+                                AnimatedBuilder(
+                                  animation: animation,
+                                  builder: (context, child) {
+                                    return Transform(
+                                      transform: Matrix4.identity()
+                                        ..setEntry(3, 2, 0.0008)
+                                        ..rotateX(e.idx == leftPosition
+                                            ? animation.value
+                                            : 0),
+                                      alignment: Alignment.center,
+                                      child: Transform.scale(
+                                        scale: 1.0 - (0.2 * ctrl.value),
+                                        child: SimpleGestureDetector(
+                                          onVerticalSwipe: (direction) {
+                                            setState(() {
+                                              activeIdx = e.idx;
+                                            });
+                                            if (direction ==
+                                                SwipeDirection.down) {
+                                              setState(() {
+                                                swipe = 0;
+                                                isExpand = !isExpand;
+                                                progressCtrl.forward();
+                                              });
+                                            }
+                                          },
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              image: DecorationImage(
+                                                image: AssetImage(
+                                                    "assets/images/${e.img}"),
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          AnimatedPositioned(
+            duration: Duration(milliseconds: 360),
+            curve: Interval(0.6, 1.0),
+            top: 18 - 36.0 * tapButton,
+            left: (w - 52) / 2,
+            child: AnimatedOpacity(
+              duration: Duration(milliseconds: 360),
+              curve: Interval(0.6, 1.0),
+              opacity: 1.0 * (1 - tapButton) * swipe,
+              child: IconButton(
+                icon: Icon(Icons.expand_less),
+                color: Colors.white.withOpacity(0.5),
+                onPressed: () {},
+                iconSize: 44,
               ),
             ),
           ),
@@ -834,40 +932,29 @@ class BottomButton extends StatelessWidget {
   }
 }
 
-class MovieModel {
-  final String img;
-  final int idx;
-  final String title;
-
-  MovieModel(this.img, this.idx, this.title);
-}
-
-List<MovieModel> movies = [
-  MovieModel("early_man.jpg", 0, "Early Man"),
-  MovieModel("infinity_war.jpg", 1, "Avengers\nInfinity War"),
-  MovieModel("the_grinch.jpg", 2, "The Grinch"),
-];
-
 class BlurBg extends StatelessWidget {
   final double w;
   final double h;
   final String img;
+  final int swipe;
 
   const BlurBg({
     Key key,
     this.img,
     this.w,
     this.h,
+    this.swipe,
   }) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: w,
-      height: h,
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 360),
+      width: w + 240 * swipe,
+      height: h + 240 * swipe,
       decoration: BoxDecoration(
         image: DecorationImage(
           image: AssetImage("assets/images/$img"),
-          fit: BoxFit.cover,
+          fit: BoxFit.fitHeight,
         ),
       ),
     );
