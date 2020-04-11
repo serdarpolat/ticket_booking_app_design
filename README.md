@@ -3,6 +3,9 @@
 
 [![IMAGE ALT TEXT HERE](ticket_booking.jpg)](http://www.youtube.com/watch?v=gcXE49yDT04)
 
+### Click on screenshot to watch Youtube video - part 2
+
+[![IMAGE ALT TEXT HERE](ticket_booking.jpg)](http://www.youtube.com/watch?v=3x0WvIhVinQ)
 
 ## Getting Started
 
